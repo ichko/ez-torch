@@ -3,7 +3,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
-from ez_torch import count_parameters
+from ez_torch.utils import count_parameters
 
 
 class Module(nn.Module):

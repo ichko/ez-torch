@@ -1,7 +1,5 @@
 import torch
 
-from ez_torch.models import TimeDistributed
-
 
 def pad_in_dim(tensor, pad_size, dim, val=0):
     shape = list(tensor.shape)
@@ -186,9 +184,6 @@ def time_distribute(module, input=None):
     module -> something that takes *x*
     return -> [bs, seq, module(x)]
     """
-    if input is None:
-        return TimeDistributed(module)
-
     shape = input[0].size() if type(input) is list else input.size()
     bs = shape[0]
     seq_len = shape[1]
