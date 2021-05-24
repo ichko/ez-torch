@@ -1,5 +1,5 @@
-from ez_torch import __version__
+import ez_torch as ez
 
 
 def test_version():
-    assert __version__ == '0.1.0'
+    assert ez.__version__ == "0.1.0"

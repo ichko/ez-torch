@@ -83,7 +83,7 @@ class TensorWrapper:
 
         return self
 
-    @staticmethod
-    @extend(torch.Tensor, is_property=True)
-    def wrap(tensor):
-        return TensorWrapper(tensor=tensor)
+
+@extend(torch.Tensor, is_property=True)
+def ez(tensor: torch.Tensor):
+    return TensorWrapper(tensor=tensor)
