@@ -1,0 +1,10 @@
+{
+  "editor.formatOnSave": true,
+  "python.pythonPath": "/home/izpc/anaconda3/bin/python",
+  "python.formatting.provider": "black",
+  "[python]": {
+      "editor.codeActionsOnSave": {
+          "source.organizeImports": true
+      }
+  }
+}
