@@ -1,8 +1,10 @@
 [tool.poetry]
 name = "ez-torch"
-version = "0.1.0"
+version = "0.1.2"
 description = "Utility functions and fluent interface for pytorch tensors and modules"
 authors = ["Iliya Zhecev <iliya.zhechev@gmail.com>"]
+license = "MIT"
+readme = "README.md"
 
 [tool.poetry.dependencies]
 python = "^3.7"
