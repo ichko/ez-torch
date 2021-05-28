@@ -3,7 +3,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
-from ez_torch.utils import count_parameters
+from ez_torch.utils import count_parameters, get_uv_grid
 
 
 class Module(nn.Module):
@@ -231,6 +231,32 @@ class SpatialUVTransformer(nn.Module):
         tensor_3d = F.grid_sample(
             tensor_3d,
             uv_map,
+            align_corners=True,
+        )
+        return tensor_3d
+
+
+class SpatialUVOffsetTransformer(nn.Module):
+    def __init__(self, i, uv_resolution_shape):
+        super().__init__()
+
+        self.uv_resolution_shape = uv_resolution_shape
+        self.infer_offset = nn.Sequential(
+            nn.Linear(i, np.prod(self.uv_resolution_shape) * 2),
+            Reshape(-1, 2, *self.uv_resolution_shape),
+            nn.Sigmoid(),
+        )
+        self.uv_map = get_uv_grid(*uv_resolution_shape)
+
+    def forward(self, x):
+        inp, tensor_3d = x
+        offset_map = self.infer_offset(inp) + self.uv_map
+
+        H, W = tensor_3d.shape[-2:]
+        offset_map = offset_map.wrap.resize(H, W).raw.permute(0, 2, 3, 1)
+        tensor_3d = F.grid_sample(
+            tensor_3d,
+            offset_map,
             align_corners=True,
         )
         return tensor_3d

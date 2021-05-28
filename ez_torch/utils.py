@@ -1,6 +1,16 @@
 import torch
 
 
+def get_uv_grid(W, H):
+    # W, H = 128, 128
+    x = torch.arange(-1, 1, 1 / W * 2)
+    y = torch.arange(-1, 1, 1 / H * 2)
+    xx, yy = torch.meshgrid(x, y)
+
+    uv_grid = torch.stack([yy, xx], dim=0)
+    return uv_grid
+
+
 def pad_in_dim(tensor, pad_size, dim, val=0):
     shape = list(tensor.shape)
     shape[dim] = pad_size - shape[dim]
