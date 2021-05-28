@@ -6,6 +6,10 @@ Utility functions and fluent interface for PyTorch tensors and modules
 
 **PIP**
 ```bash
+# Latest release
+pip install ez-torch
+
+# The the dev version 
 pip install git+https://github.com/ichko/ez-torch
 ```
 
