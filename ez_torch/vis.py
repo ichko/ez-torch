@@ -15,7 +15,10 @@ def unwrap(tensor):
 
 class Fig:
     def __init__(self, nr, nc, *args, **kwargs):
+        plt.ion()
+
         self.fig = plt.figure(*args, **kwargs)
+
         self.axs = self.fig.subplots(nr, nc)
         self.called = set()
         # plt.close()
@@ -37,6 +40,7 @@ class Fig:
                         def set_data(child):
                             try:
                                 child.set_array(data.ravel())
+                                child.autoscale()
                                 return True
                             except:
                                 try:
@@ -57,12 +61,12 @@ class Fig:
 
                         if key in self.called:
                             found = False
+                            ax.clear()
                             for child in ax.get_children():
                                 success = set_data(child)
                                 if success:
                                     found = True
                             if not found:
-                                ax.clear()
                                 create_plot()
                         else:
                             create_plot()
@@ -70,3 +74,7 @@ class Fig:
                 return Call()
 
         return Getattr()
+
+    def update(self):
+        self.fig.canvas.draw()
+        self.fig.canvas.flush_events()
