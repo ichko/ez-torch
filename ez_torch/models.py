@@ -248,12 +248,15 @@ class SpatialUVOffsetTransformer(nn.Module):
         )
         self.uv_map = get_uv_grid(*uv_resolution_shape)
 
+        self.infer_offset[0].weight.data /= 2
+        self.infer_offset[0].bias.data.fill_(-1)
+
     def forward(self, x):
         inp, tensor_3d = x
         offset_map = self.infer_offset(inp) + self.uv_map
 
         H, W = tensor_3d.shape[-2:]
-        offset_map = offset_map.wrap.resize(H, W).raw.permute(0, 2, 3, 1)
+        offset_map = offset_map.ez.resize(H, W).raw.permute(0, 2, 3, 1)
         tensor_3d = F.grid_sample(
             tensor_3d,
             offset_map,
