@@ -1,5 +1,7 @@
-from ez_torch.models import *
+# import ez_torch.data as data
+# from ez_torch.models import *
 from ez_torch.tensor_wrapper import *
-from ez_torch.utils import *
+
+# from ez_torch.utils import *
 
 __version__ = "0.1.0"

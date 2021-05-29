@@ -69,6 +69,11 @@ class TensorWrapper:
         self.tensor = self.tensor.reshape(*split_shape, *rest_dims)
         return self
 
+    @property
+    def channel_last(self):
+        self.tensor = self.tensor.permute(1, 2, 0)
+        return self
+
     def imshow(self, figsize=(16, 16)):
         import matplotlib.pyplot as plt
 
