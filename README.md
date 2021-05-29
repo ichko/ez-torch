@@ -9,7 +9,7 @@ Utility functions and fluent interface for PyTorch tensors and modules
 # Latest release
 pip install ez-torch
 
-# The the dev version 
+# Dev version 
 pip install git+https://github.com/ichko/ez-torch
 ```
 
