@@ -8,8 +8,9 @@
             "name": "Python: Current File",
             "type": "python",
             "request": "launch",
-            "program": "poetry run pytest",
-            "console": "integratedTerminal"
+            "program": "tests/test_ez_torch.py",
+            "console": "integratedTerminal",
+            "env": {"DISPLAY": ":0"}
         }
     ]
 }
