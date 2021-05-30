@@ -9,7 +9,7 @@ def get_mnist_dl(bs_train, bs_test, shuffle) -> Tuple[DataLoader, DataLoader]:
     transform = Compose(
         [
             ToTensor(),
-            Normalize((0.1307,), (0.3081,)),
+            Normalize((0,), (1,)),
         ]
     )
 
