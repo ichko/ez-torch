@@ -33,9 +33,6 @@ class Module(nn.Module):
     def configure_optim(self, lr):
         self.optim = torch.optim.Adam(self.parameters(), lr=lr)
 
-    def metrics(self, _loss, _info):
-        return {}
-
     def set_requires_grad(self, value):
         for param in self.parameters():
             param.requires_grad = value
@@ -83,18 +80,8 @@ class Module(nn.Module):
             loss.backward()
             self.optim.step()
 
-        metrics = self.metrics(
-            {
-                "loss": loss,
-                "X": X,
-                "y": y,
-                "y_pred": y_pred,
-            }
-        )
-
         return {
-            "metrics": metrics,
-            "loss": loss,
+            "loss": loss.item(),
             "y_pred": y_pred,
         }
 
