@@ -20,7 +20,7 @@ def test_SpatialUVOffsetTransformer():
                 pretrained=True, progress=False
             )
             self.transform = SpatialUVOffsetTransformer(
-                1000, uv_resolution_shape=(5, 5)
+                1000, uv_resolution_shape=(10, 10)
             )
 
         def criterion(self, y, y_target):
@@ -35,16 +35,15 @@ def test_SpatialUVOffsetTransformer():
     X, y = next(iter(train))
 
     model = Model()
+    model.configure_optim(lr=0.001)
     # feature_model.eval()
 
     fig = Fig(nr=1, nc=2, figsize=(10, 5))
 
-    for i in range(100):
-        info = model.optim_step([X, y])
+    for _i in range(100):
+        info = model.optim_step([X, X])
         loss = info["loss"]
         X_transformed = info["y_pred"]
-
-        print(loss)
 
         # TODO: Fix animation updates
         fig[0].imshow(X.ez.grid(nr=10).channel_last)
