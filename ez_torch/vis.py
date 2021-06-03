@@ -1,6 +1,7 @@
 from typing import Dict
 
 import matplotlib.pyplot as plt
+from matplotlib.pyplot import draw, pause
 from torch import Tensor
 
 from ez_torch.tensor_wrapper import TensorWrapper
@@ -20,7 +21,7 @@ class Fig:
         self.fig = plt.figure(*args, **kwargs)
 
         self.axs = self.fig.subplots(nr, nc)
-        self.called = set()
+        self.plots_mem = {}
         # plt.close()
 
     def __getitem__(self, index):
@@ -37,36 +38,36 @@ class Fig:
                     def __call__(_, data, **kwargs):
                         data = unwrap(data)
 
-                        def set_data(child):
+                        def set_data(plot):
                             try:
-                                child.set_array(data.ravel())
-                                child.autoscale()
+                                plot.set_array(data.ravel())
+                                plot.autoscale()
                                 return True
                             except:
                                 try:
-                                    child.set_data(data)
+                                    plot.set_data(data)
+                                    draw()
+                                    pause()
                                     return True
                                 except Exception as e:
                                     return False
 
                         def create_plot():
-                            self.called.add(key)
                             try:
-                                getattr(sns, identifier)(data, **kwargs, ax=ax)
+                                plot = getattr(sns, identifier)(data, **kwargs, ax=ax)
+                                self.plots_mem[key] = [ax, plot]
                             except:
                                 try:
-                                    getattr(ax, identifier)(data, **kwargs)
+                                    plot = getattr(ax, identifier)(data, **kwargs)
+                                    self.plots_mem[key] = [ax, plot]
                                 except Exception as e:
                                     raise e
 
-                        if key in self.called:
-                            found = False
+                        if key in self.plots_mem:
+                            _, plot = self.plots_mem[key]
                             ax.clear()
-                            for child in ax.get_children():
-                                success = set_data(child)
-                                if success:
-                                    found = True
-                            if not found:
+                            success = set_data(plot)
+                            if not success:
                                 create_plot()
                         else:
                             create_plot()
