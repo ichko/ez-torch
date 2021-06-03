@@ -1,4 +1,8 @@
 import ez_torch as ez
+import matplotlib
+
+matplotlib.use("TkAgg")
+
 import matplotlib.pyplot as plt
 import pytest
 import torch.nn.functional as F
@@ -39,6 +43,7 @@ def test_SpatialUVOffsetTransformer():
     # feature_model.eval()
 
     fig = Fig(nr=1, nc=2, figsize=(10, 5))
+    fig[0].imshow(X.ez.grid(nr=10).channel_last)
 
     for _i in range(100):
         info = model.optim_step([X, X])
@@ -46,7 +51,6 @@ def test_SpatialUVOffsetTransformer():
         X_transformed = info["y_pred"]
 
         # TODO: Fix animation updates
-        fig[0].imshow(X.ez.grid(nr=10).channel_last)
         fig[1].imshow(X_transformed.ez.grid(nr=10).channel_last)
         fig.update()
 
