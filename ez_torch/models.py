@@ -214,7 +214,7 @@ class SpatialUVTransformer(nn.Module):
         inp, tensor_3d = x
         uv_map = self.infer_uv(inp)
         H, W = tensor_3d.shape[-2:]
-        uv_map = uv_map.wrap.resize(H, W).raw.permute(0, 2, 3, 1)
+        uv_map = uv_map.ez.resize(H, W).raw.permute(0, 2, 3, 1)
         tensor_3d = F.grid_sample(
             tensor_3d,
             uv_map,
@@ -233,7 +233,10 @@ class SpatialUVOffsetTransformer(nn.Module):
             Reshape(-1, 2, *self.uv_resolution_shape),
             nn.Sigmoid(),
         )
-        self.uv_map = get_uv_grid(*uv_resolution_shape)
+        self.uv_map = nn.parameter.Parameter(
+            get_uv_grid(*uv_resolution_shape),
+            requires_grad=False,
+        )
 
         self.infer_offset[0].weight.data /= 2
         self.infer_offset[0].bias.data.fill_(-1)
@@ -248,7 +251,7 @@ class SpatialUVOffsetTransformer(nn.Module):
             tensor_3d,
             offset_map,
             align_corners=True,
-        )
+        ).clamp(0, 1)
         return tensor_3d
 
 
