@@ -1,8 +1,5 @@
 import ez_torch as ez
 import matplotlib
-
-matplotlib.use("TkAgg")
-
 import matplotlib.pyplot as plt
 import pytest
 import torch.nn.functional as F
@@ -10,6 +7,8 @@ import torchvision
 from ez_torch.data import get_mnist_dl
 from ez_torch.models import Module, SpatialUVOffsetTransformer
 from ez_torch.vis import Fig
+
+# matplotlib.use("TkAgg")
 
 
 def test_version():
