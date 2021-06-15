@@ -41,10 +41,10 @@ def test_SpatialUVOffsetTransformer():
     model.configure_optim(lr=0.001)
     # feature_model.eval()
 
-    fig = Fig(nr=1, nc=2, figsize=(10, 5))
+    fig = Fig(nr=1, nc=2, ion=True, figsize=(10, 5))
     fig[0].imshow(X.ez.grid(nr=10).channel_last)
 
-    for _i in range(100):
+    for _i in range(10):
         info = model.optim_step([X, X])
         loss = info["loss"]
         X_transformed = info["y_pred"]

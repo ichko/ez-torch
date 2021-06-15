@@ -21,7 +21,7 @@ class Fig:
 
         self.fig = plt.figure(*args, **kwargs)
 
-        self.axs = self.fig.subplots(nr, nc)
+        self.fig, self.axs = plt.subplots(nrows=nr, ncols=nc)
         self.plots_mem = {}
         # plt.close()
 
