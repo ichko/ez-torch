@@ -1,5 +1,6 @@
 from typing import Tuple, Union
 
+from torch import nn
 from torch.utils.data import DataLoader, Dataset
 from torchvision.datasets.mnist import MNIST
 from torchvision.transforms.transforms import Compose, Normalize, ToTensor
@@ -87,6 +88,9 @@ class ParamCompose(nn.Module):
     """Compose multiple modules that can yield be forwarded to yield the
     parameters of random transformation. This is needed because we might
     want to do this transformation multiple times.
+
+    Used to forward parameters of random transformations
+    of `kornia` augmentation modules.
     """
 
     def __init__(self, functions):
