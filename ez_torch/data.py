@@ -105,3 +105,14 @@ class ParamCompose(nn.Module):
             inp = f(inp, p)
 
         return inp
+
+    def forward_parameters(self, shape, device="cpu"):
+        params = []
+        for f in self.functions:
+            p = f.forward_parameters(shape)
+            pp = {}
+            for k, v in p.items():
+                pp[k] = v.to(device)
+            params.append(pp)
+
+        return params
