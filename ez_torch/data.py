@@ -1,3 +1,4 @@
+from random import shuffle
 from typing import Tuple, Union
 
 from torch import nn
@@ -54,28 +55,27 @@ class MapDataset(Dataset):
 
 
 class CachedDataset:
-    """Used to generate cached version of a datamodule. Yield once
-    and then yields from the cache.
+    def __init__(self, data: Union[Dataset, DataLoader], shuffle=False) -> None:
+        """Used to generate cached version of a datamodule. Yield once
+        and then yields from the cache. Kind of designed to be used in
+        a single thread. Consider the chainging state in the iterator.
 
-    Args:
-        dl ([Dataloader]): Dataloader to cache
-
-    Returns:
-        Dataloader: The cached dataloader
-
-    Yields:
-        Batch: batches of data
-    """
-
-    def __init__(self, data: Union[Dataset, DataLoader]) -> None:
+        Args:
+            data (Union[Dataset, DataLoader]): Dataloader/set to get the data from
+            shuffle (bool, optional): Shuffle the cache buffer on every iteration.
+                                      Defaults to False.
+        """
         self.buffer = []
         self.data = data
+        self.shuffle = shuffle
 
     def __len__(self):
         return len(self.data)
 
     def __iter__(self):
         if len(self.buffer) > 0:
+            if self.shuffle:
+                shuffle(self.buffer)
             for b in self.buffer:
                 yield b
         else:
