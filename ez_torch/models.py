@@ -208,6 +208,7 @@ class SpatialUVTransformer(nn.Module):
             nn.Linear(i, np.prod(self.uv_resolution_shape) * 2),
             Reshape(-1, 2, *self.uv_resolution_shape),
             nn.Sigmoid(),
+            Lambda(lambda x: x * 2 - 1),  # range in [-1, 1]
         )
 
     def forward(self, x):
@@ -232,14 +233,15 @@ class SpatialUVOffsetTransformer(nn.Module):
             nn.Linear(i, np.prod(self.uv_resolution_shape) * 2),
             Reshape(-1, 2, *self.uv_resolution_shape),
             nn.Sigmoid(),
+            Lambda(lambda x: x * 2 - 1),  # range in [-1, 1]
         )
         self.uv_map = nn.parameter.Parameter(
             get_uv_grid(*uv_resolution_shape),
             requires_grad=False,
         )
 
-        self.infer_offset[0].weight.data /= 2
-        self.infer_offset[0].bias.data.fill_(-1)
+        self.infer_offset[0].weight.data /= 100
+        self.infer_offset[0].bias.data.fill_(0)
 
     def forward(self, x):
         inp, tensor_3d = x
