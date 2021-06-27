@@ -1,6 +1,7 @@
 from typing import Dict
 
 import matplotlib.pyplot as plt
+import seaborn as sns
 from matplotlib.pyplot import draw, pause
 from torch import Tensor
 

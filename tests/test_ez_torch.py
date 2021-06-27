@@ -5,8 +5,9 @@ import pytest
 import torch.nn.functional as F
 import torchvision
 from ez_torch.data import get_mnist_dl
-from ez_torch.models import Module, SpatialUVOffsetTransformer
+from ez_torch.models import Module, SpatialLinearTransformer, SpatialUVOffsetTransformer
 from ez_torch.vis import Fig
+from tqdm.auto import tqdm
 
 # matplotlib.use("TkAgg")
 
@@ -23,8 +24,12 @@ def test_SpatialUVOffsetTransformer():
                 pretrained=True, progress=False
             )
             self.transform = SpatialUVOffsetTransformer(
-                1000, uv_resolution_shape=(10, 10)
+                1000,
+                uv_resolution_shape=(3, 3),
             )
+            # self.transform = SpatialLinearTransformer(
+            #     1000, num_channels=1,
+            # )
 
         def criterion(self, y, y_target):
             return F.binary_cross_entropy(y, y_target)
@@ -38,13 +43,12 @@ def test_SpatialUVOffsetTransformer():
     X, y = next(iter(train))
 
     model = Model()
-    model.configure_optim(lr=0.001)
-    # feature_model.eval()
+    model.configure_optim(lr=0.0001)
 
     fig = Fig(nr=1, nc=2, ion=True, figsize=(10, 5))
     fig[0].imshow(X.ez.grid(nr=10).channel_last)
 
-    for _i in range(10):
+    for _i in tqdm(range(100)):
         info = model.optim_step([X, X])
         loss = info["loss"]
         X_transformed = info["y_pred"]
