@@ -3,9 +3,8 @@ import torch.nn.functional as F
 
 
 def get_uv_grid(W, H):
-    # W, H = 128, 128
-    x = torch.arange(-1, 1, 1 / W * 2)
-    y = torch.arange(-1, 1, 1 / H * 2)
+    x = torch.linspace(-1, 1, W)
+    y = torch.linspace(-1, 1, H)
     xx, yy = torch.meshgrid(x, y)
 
     uv_grid = torch.stack([yy, xx], dim=0)
