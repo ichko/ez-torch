@@ -168,10 +168,10 @@ class SpatialLinearTransformer(nn.Module):
         )
 
     def forward(self, x):
-        inp, tensor_3d = x
+        param_features, input_to_transform = x
 
-        theta = self.locator(inp)
-        _, C, H, W = tensor_3d.shape
+        theta = self.locator(param_features)
+        _, C, H, W = input_to_transform.shape
 
         if self.only_translations:
             theta[:, :, :-1] = (
@@ -189,14 +189,14 @@ class SpatialLinearTransformer(nn.Module):
             align_corners=True,
         )
 
-        tensor_3d = tensor_3d.reshape(-1, 1, H, W)
-        tensor_3d = F.grid_sample(
-            tensor_3d,
+        input_to_transform = input_to_transform.reshape(-1, 1, H, W)
+        input_to_transform = F.grid_sample(
+            input_to_transform,
             grid,
             align_corners=True,
         )
 
-        return tensor_3d.reshape(-1, C, H, W)
+        return input_to_transform.reshape(-1, C, H, W)
 
 
 class SpatialUVTransformer(nn.Module):
@@ -225,27 +225,27 @@ class SpatialUVTransformer(nn.Module):
 
 
 class SpatialUVOffsetTransformer(nn.Module):
-    def __init__(self, i, uv_resolution_shape):
+    def __init__(self, inp, uv_resolution_shape):
         super().__init__()
 
         self.uv_resolution_shape = uv_resolution_shape
         self.infer_offset = nn.Sequential(
-            nn.Linear(i, np.prod(self.uv_resolution_shape) * 2),
+            nn.Linear(inp, np.prod(self.uv_resolution_shape) * 2),
             Reshape(-1, 2, *self.uv_resolution_shape),
             nn.Sigmoid(),
             Lambda(lambda x: x * 2 - 1),  # range in [-1, 1]
         )
-        self.uv_map = nn.parameter.Parameter(
+        self.id_uv_map = nn.parameter.Parameter(
             get_uv_grid(*uv_resolution_shape),
             requires_grad=False,
         )
 
-        self.infer_offset[0].weight.data /= 100
+        self.infer_offset[0].weight.data /= 2
         self.infer_offset[0].bias.data.fill_(0)
 
     def forward(self, x):
         inp, tensor_3d = x
-        offset_map = self.infer_offset(inp) + self.uv_map
+        offset_map = self.infer_offset(inp) + self.id_uv_map
 
         H, W = tensor_3d.shape[-2:]
         offset_map = offset_map.ez.resize(H, W).raw.permute(0, 2, 3, 1)

@@ -1,7 +1,9 @@
 import ez_torch as ez
 import matplotlib
 import matplotlib.pyplot as plt
+import numpy as np
 import pytest
+import torch.nn as nn
 import torch.nn.functional as F
 import torchvision
 from ez_torch.data import get_mnist_dl
@@ -17,18 +19,22 @@ def test_version():
 
 
 def test_SpatialUVOffsetTransformer():
+    device = "cuda"
+
     class Model(Module):
         def __init__(self):
             super().__init__()
             self.feature_model = torchvision.models.resnet18(
-                pretrained=True, progress=False
+                pretrained=False, progress=False, num_classes=254
             )
+            # self.feature_model = nn.Sequential(nn.Flatten(), nn.Linear(28 * 28, 254))
             self.transform = SpatialUVOffsetTransformer(
-                1000,
-                uv_resolution_shape=(3, 3),
+                254,
+                uv_resolution_shape=(2, 2),
             )
             # self.transform = SpatialLinearTransformer(
-            #     1000, num_channels=1,
+            #     1000,
+            #     num_channels=1,
             # )
 
         def criterion(self, y, y_target):
@@ -36,25 +42,30 @@ def test_SpatialUVOffsetTransformer():
 
         def forward(self, x):
             X_features = self.feature_model(x.repeat([1, 3, 1, 1]))
+            # X_features = self.feature_model(x)
             X_transformed = self.transform([X_features, X])
             return X_transformed
 
-    train, test = get_mnist_dl(bs_train=100, bs_test=10, shuffle=False)
+    train, test = get_mnist_dl(bs_train=16, bs_test=10, shuffle=False)
     X, y = next(iter(train))
+    X = X.to(device)
 
-    model = Model()
-    model.configure_optim(lr=0.0001)
+    model = Model().to(device)
+    model.configure_optim(lr=0.002)
 
-    fig = Fig(nr=1, nc=2, ion=True, figsize=(10, 5))
-    fig[0].imshow(X.ez.grid(nr=10).channel_last)
-
-    for _i in tqdm(range(100)):
+    fig = Fig(nr=1, nc=3, ion=True, figsize=(10, 5))
+    fig[0].imshow(X.ez.grid(nr=4).channel_last.np)
+    history = []
+    for _i in tqdm(range(1000)):
         info = model.optim_step([X, X])
         loss = info["loss"]
         X_transformed = info["y_pred"]
+        print(loss)
+        history.append(loss)
 
         # TODO: Fix animation updates
-        fig[1].imshow(X_transformed.ez.grid(nr=10).channel_last)
+        fig[1].imshow(X_transformed.ez.grid(nr=4).channel_last.np)
+        fig[2].plot(history)
         fig.update()
 
     plt.show()

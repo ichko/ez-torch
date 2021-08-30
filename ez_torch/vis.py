@@ -16,7 +16,7 @@ def unwrap(tensor):
 
 
 class Fig:
-    def __init__(self, nr, nc, ion=False, *args, **kwargs):
+    def __init__(self, nr=1, nc=1, ion=False, *args, **kwargs):
         if ion:
             plt.ion()
 
