@@ -18,6 +18,13 @@ def test_version():
     assert ez.__version__ == "0.1.0"
 
 
+def test_SpatialLinearTransformer_classifier():
+    # TODO: Task - Implement STN Classifier as show in the tutorial
+    # <https://pytorch.org/tutorials/intermediate/spatial_transformer_tutorial.html>
+    # Visualize training results - image transformation during training
+    pass
+
+
 def test_SpatialUVOffsetTransformer():
     device = "cuda"
 
