@@ -242,7 +242,7 @@ class SpatialUVOffsetTransformer(nn.Module):
             requires_grad=False,
         )
 
-        self.infer_offset[0].weight.data *= 4
+        self.infer_offset[0].weight.data *= 0.5
         self.infer_offset[0].bias.data.fill_(0)
 
     def forward(self, x):

@@ -24,28 +24,27 @@ def test_SpatialUVOffsetTransformer():
     class Model(Module):
         def __init__(self):
             super().__init__()
-            # self.feature_model = torchvision.models.resnet18(
-            #     pretrained=False, progress=False, num_classes=254
-            # )
             self.feature_model = nn.Sequential(
-                nn.Flatten(),
-                nn.Linear(28 * 28, 32),
+                torchvision.models.resnet18(
+                    pretrained=False, progress=False, num_classes=32
+                ),
                 nn.ReLU(),
             )
+            # self.feature_model = nn.Sequential(
+            #     nn.Flatten(),
+            #     nn.Linear(28 * 28, 32),
+            #     nn.ReLU(),
+            # )
             self.transform = SpatialUVOffsetTransformer(
                 32,
                 uv_resolution_shape=(10, 10),
             )
-            # self.transform = SpatialLinearTransformer(
-            #     1000,
-            #     num_channels=1,
-            # )
 
         def criterion(self, y, y_target):
             return F.binary_cross_entropy(y, y_target)
 
         def forward(self, x):
-            # x = x.repeat([1, 3, 1, 1])
+            x = x.repeat([1, 3, 1, 1])
             X_features = self.feature_model(x)
             X_transformed = self.transform([X_features, X])
             return X_transformed
