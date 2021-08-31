@@ -227,7 +227,7 @@ class SpatialUVTransformer(nn.Module):
 
 
 class SpatialUVOffsetTransformer(nn.Module):
-    def __init__(self, inp, uv_resolution_shape):
+    def __init__(self, inp, uv_resolution_shape, weight_mult_factor=0.5):
         super().__init__()
 
         self.uv_resolution_shape = uv_resolution_shape
@@ -242,7 +242,7 @@ class SpatialUVOffsetTransformer(nn.Module):
             requires_grad=False,
         )
 
-        self.infer_offset[0].weight.data *= 0.5
+        self.infer_offset[0].weight.data *= weight_mult_factor
         self.infer_offset[0].bias.data.fill_(0)
 
     def forward(self, x):
