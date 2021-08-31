@@ -1,3 +1,5 @@
+import os
+
 import numpy as np
 import torch
 import torch.nn as nn
@@ -31,7 +33,7 @@ class Module(nn.Module):
         return os.path.isfile(self.path)
 
     def configure_optim(self, lr):
-        self.optim = torch.optim.Adam(self.parameters(), lr=lr)
+        self.optim = torch.optim.SGD(self.parameters(), lr=lr)
 
     def set_requires_grad(self, value):
         for param in self.parameters():
@@ -240,7 +242,7 @@ class SpatialUVOffsetTransformer(nn.Module):
             requires_grad=False,
         )
 
-        self.infer_offset[0].weight.data /= 2
+        self.infer_offset[0].weight.data *= 4
         self.infer_offset[0].bias.data.fill_(0)
 
     def forward(self, x):

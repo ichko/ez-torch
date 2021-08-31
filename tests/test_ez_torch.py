@@ -18,26 +18,23 @@ def test_version():
     assert ez.__version__ == "0.1.0"
 
 
-def test_SpatialLinearTransformer_classifier():
-    # TODO: Task - Implement STN Classifier as show in the tutorial
-    # <https://pytorch.org/tutorials/intermediate/spatial_transformer_tutorial.html>
-    # Visualize training results - image transformation during training
-    pass
-
-
 def test_SpatialUVOffsetTransformer():
     device = "cuda"
 
     class Model(Module):
         def __init__(self):
             super().__init__()
-            self.feature_model = torchvision.models.resnet18(
-                pretrained=False, progress=False, num_classes=254
+            # self.feature_model = torchvision.models.resnet18(
+            #     pretrained=False, progress=False, num_classes=254
+            # )
+            self.feature_model = nn.Sequential(
+                nn.Flatten(),
+                nn.Linear(28 * 28, 32),
+                nn.ReLU(),
             )
-            # self.feature_model = nn.Sequential(nn.Flatten(), nn.Linear(28 * 28, 254))
             self.transform = SpatialUVOffsetTransformer(
-                254,
-                uv_resolution_shape=(2, 2),
+                32,
+                uv_resolution_shape=(10, 10),
             )
             # self.transform = SpatialLinearTransformer(
             #     1000,
@@ -48,8 +45,8 @@ def test_SpatialUVOffsetTransformer():
             return F.binary_cross_entropy(y, y_target)
 
         def forward(self, x):
-            X_features = self.feature_model(x.repeat([1, 3, 1, 1]))
-            # X_features = self.feature_model(x)
+            # x = x.repeat([1, 3, 1, 1])
+            X_features = self.feature_model(x)
             X_transformed = self.transform([X_features, X])
             return X_transformed
 
@@ -58,21 +55,26 @@ def test_SpatialUVOffsetTransformer():
     X = X.to(device)
 
     model = Model().to(device)
-    model.configure_optim(lr=0.002)
+    model.configure_optim(lr=0.01)
 
-    fig = Fig(nr=1, nc=3, ion=True, figsize=(10, 5))
-    fig[0].imshow(X.ez.grid(nr=4).channel_last.np)
+    fig = Fig(nr=1, nc=4, ion=True, figsize=(20, 5))
+    in_np = X.ez.grid(nr=4).channel_last.np
+    fig[0].imshow(in_np)
+
     history = []
-    for _i in tqdm(range(1000)):
+    tq = tqdm(range(1000))
+    for _i in tq:
         info = model.optim_step([X, X])
         loss = info["loss"]
         X_transformed = info["y_pred"]
-        print(loss)
         history.append(loss)
+        tq.set_description(f"Loss: {loss}")
 
         # TODO: Fix animation updates
         fig[1].imshow(X_transformed.ez.grid(nr=4).channel_last.np)
-        fig[2].plot(history)
+        out_np = X_transformed.ez.grid(nr=4).channel_last.np
+        fig[2].imshow(np.abs(in_np - out_np))
+        fig[3].plot(history[-100:])
         fig.update()
 
     plt.show()
