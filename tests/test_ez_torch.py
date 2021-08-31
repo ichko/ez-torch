@@ -18,7 +18,20 @@ def test_version():
     assert ez.__version__ == "0.1.0"
 
 
-def test_SpatialUVOffsetTransformer():
+def test_SpatialUVOffsetTransformer_trainToBeIdentity():
+    """
+    Important observations for the STN Training on being the identity.
+
+    - Activation of the feature extractor is important
+        - it dictates the distribution of the input activations
+            => the initial params of the geometric transformation
+        - The initial params should be so that the initial transformation is close to id
+        - Activating with ReLU seems to be a good thing to do at the end of the feature extractor
+    - Using SGD is crucial. Adam seems to be shaky, the momentum is leading to sporadic
+    geometric transformations and we often get stuck at local minima
+    - LR is important HParam here. Smaller is better with Adam (0.0001). SGD works best,
+    even with large LR (0.01) we get convergence to a good solution.
+    """
     device = "cuda"
 
     class Model(Module):
