@@ -39,7 +39,9 @@ def test_SpatialUVOffsetTransformer_trainToBeIdentity():
             super().__init__()
             self.feature_model = nn.Sequential(
                 torchvision.models.resnet18(
-                    pretrained=False, progress=False, num_classes=32
+                    pretrained=False,
+                    progress=False,
+                    num_classes=32,
                 ),
                 nn.ReLU(),
             )
@@ -57,9 +59,9 @@ def test_SpatialUVOffsetTransformer_trainToBeIdentity():
             return F.binary_cross_entropy(y, y_target)
 
         def forward(self, x):
-            x = x.repeat([1, 3, 1, 1])
-            X_features = self.feature_model(x)
-            X_transformed = self.transform([X_features, X])
+            x_3d = x.repeat([1, 3, 1, 1])
+            X_features = self.feature_model(x_3d)
+            X_transformed = self.transform([X_features, x])
             return X_transformed
 
     train, test = get_mnist_dl(bs_train=16, bs_test=10, shuffle=False)
@@ -69,12 +71,20 @@ def test_SpatialUVOffsetTransformer_trainToBeIdentity():
     model = Model().to(device)
     model.configure_optim(lr=0.01)
 
-    fig = Fig(nr=1, nc=4, ion=True, figsize=(20, 5))
+    fig = Fig(
+        nr=1,
+        nc=4,
+        ion=True,
+        figsize=(20, 5),
+        realtime_render=False,
+        vid_path=".tmp/out.mp4",
+        fps=10,
+    )
     in_np = X.ez.grid(nr=4).channel_last.np
     fig[0].imshow(in_np)
 
     history = []
-    tq = tqdm(range(1000))
+    tq = tqdm(range(30))
     for _i in tq:
         info = model.optim_step([X, X])
         loss = info["loss"]
@@ -88,8 +98,6 @@ def test_SpatialUVOffsetTransformer_trainToBeIdentity():
         fig[2].imshow(np.abs(in_np - out_np))
         fig[3].plot(history[-100:])
         fig.update()
-
-    plt.show()
 
 
 if __name__ == "__main__":
