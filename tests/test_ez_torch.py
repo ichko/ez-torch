@@ -7,7 +7,11 @@ import torch.nn as nn
 import torch.nn.functional as F
 import torchvision
 from ez_torch.data import get_mnist_dl
-from ez_torch.models import Module, SpatialLinearTransformer, SpatialUVOffsetTransformer
+from ez_torch.modules import (
+    Module,
+    SpatialLinearTransformer,
+    SpatialUVOffsetTransformer,
+)
 from ez_torch.vis import Fig
 from tqdm.auto import tqdm
 
