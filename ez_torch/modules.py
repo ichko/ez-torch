@@ -5,87 +5,8 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
-from ez_torch.utils import count_parameters, get_uv_grid
-
-
-class Module(nn.Module):
-    def __init__(self):
-        super().__init__()
-        self.name = self.__class__.__name__
-
-    def count_parameters(self):
-        return count_parameters(self)
-
-    def make_persisted(self, path):
-        self.path = path
-
-    def persist(self):
-        torch.save(self.state_dict(), self.path)
-
-    def preload_weights(self):
-        self.load_state_dict(torch.load(self.path))
-
-    def save(self, path=None):
-        path = path if self.path is None else path
-        torch.save(self, f"{self.path}_whole.h5")
-
-    def can_be_preloaded(self):
-        return os.path.isfile(self.path)
-
-    def configure_optim(self, lr):
-        self.optim = torch.optim.SGD(self.parameters(), lr=lr)
-
-    def set_requires_grad(self, value):
-        for param in self.parameters():
-            param.requires_grad = value
-
-    def summary(self, input_size=-1):
-        try:
-            from torchsummary import summary
-
-            summary(self, input_size)
-            return
-        except Exception:
-            pass
-
-        result = f" > {self.name[:38]:<38} | {count_parameters(self):09,}\n"
-        for name, module in self.named_children():
-            type = module._get_name()
-            num_prams = count_parameters(module)
-            result += f" >  {name[:20]:>20}: {type[:15]:<15} | {num_prams:9,}\n"
-
-        print(result)
-
-    def optim_forward(self, X):
-        return self.forward(X)
-
-    @property
-    def device(self):
-        return next(self.parameters()).device
-
-    def freeze(self):
-        for param in self.parameters():
-            param.requires_grad = False
-
-    def unfreeze(self):
-        for param in self.parameters():
-            param.requires_grad = True
-
-    def optim_step(self, batch):
-        X, y = batch
-
-        y_pred = self.optim_forward(X)
-        loss = self.criterion(y_pred, y)
-
-        if loss.requires_grad:
-            self.optim.zero_grad()
-            loss.backward()
-            self.optim.step()
-
-        return {
-            "loss": loss.item(),
-            "y_pred": y_pred,
-        }
+from ez_torch.base_module import Module
+from ez_torch.utils import get_uv_grid
 
 
 def leaky(slope=0.2):
