@@ -12,10 +12,6 @@ class Module(nn.Module):
         super().__init__()
         self.name = self.__class__.__name__
 
-    @property
-    def ui(self):
-        return TrainableUI(self)
-
     def count_parameters(self):
         return count_parameters(self)
 

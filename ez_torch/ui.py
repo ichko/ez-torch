@@ -1,13 +1,14 @@
 import time
 from argparse import Namespace
-from threading import Thread
+from contextlib import nullcontext
+from threading import Lock, Thread
 
 import ipywidgets as w
 import numpy as np
 from IPython.display import clear_output, display
 
 
-class ui:
+class UIView:
     def __init__(self, container, named_widgets) -> None:
         self._named_widgets = named_widgets
         self._container = container
@@ -47,9 +48,11 @@ class ui:
 
         return Values()
 
+
+class ui:
     @staticmethod
     def singleton(name, widget):
-        return ui(widget, {name: widget})
+        return UIView(widget, {name: widget})
 
     @staticmethod
     def slider(id="unset", *args, **kwargs):
@@ -61,7 +64,7 @@ class ui:
 
     @staticmethod
     def int(id="unset", *args, **kwargs):
-        return ui.singleton(name=id, widget=w.IntText(*args, **kwargs))
+        return ui.singleton(name=id, widget=w.BoundedIntText(*args, **kwargs))
 
     @staticmethod
     def float(id="unset", *args, **kwargs):
@@ -138,7 +141,7 @@ class ui:
             n: w for u in children for n, w in u._named_widgets.items()
         }
         container_content = [u._container for u in children]
-        return ui(
+        return UIView(
             container=w.HBox(container_content, **kwargs),
             named_widgets=new_named_widgets,
         )
@@ -149,60 +152,120 @@ class ui:
             n: w for u in children for n, w in u._named_widgets.items()
         }
         container_content = [u._container for u in children]
-        return ui(
+        return UIView(
             container=w.VBox(container_content, **kwargs),
             named_widgets=new_named_widgets,
         )
 
 
-class TrainableUI(w.Output):
-    def __init__(self, module):
-        super().__init__()
-        self.module = module
-        self._restart_ui()
+def train(model, dataloader, **params):
+    params = Namespace(**params)
+    running_state = "stopped"
+    it = 0
+    batch_iterator = iter(dataloader)
+    loss_history = []
+    lock = nullcontext()
 
-    def _restart_ui(self):
-        view = ui.v(
-            ui.h(
-                ui.v(
-                    ui.label(value="LR"),
-                    ui.slider("lr", min=0.001, max=1, layout={"width": "auto"}),
-                    ui.label(value="ITS"),
-                    ui.int(
-                        "its", min=1, max=1000, default=100, layout={"width": "auto"}
-                    ),
-                    layout=w.Layout(**{"width": "25%", "border": "2px solid #ccc"}),
+    view = ui.v(
+        ui.h(
+            ui.v(
+                ui.label(value="LR"),
+                ui.slider(
+                    "lr",
+                    min=0.0001,
+                    max=1,
+                    value=0.001,
+                    step=0.0001,
+                    readout_format=".4f",
+                    layout={"width": "auto"},
                 ),
-                ui.v(
-                    ui.h(
-                        ui.progress("progress", description="IT [000:000]"),
-                        ui.button("start", description="Start"),
-                        ui.button("reset", description="Restart"),
-                    ),
-                    ui.line("loss", title="Loss", layout={"height": "350px"}),
-                    layout={"width": "100%", "border": "2px solid #ccc"},
+                ui.label(value="ITS"),
+                ui.int(
+                    "its",
+                    min=1,
+                    max=999999999,
+                    value=params.its,
+                    layout={"width": "auto"},
                 ),
-                layout={"border": "2px solid #ccc"},
+                layout=w.Layout(**{"width": "25%", "border": "2px solid #ccc"}),
             ),
-            ui.output("out"),
-            layout={"border": "4px solid #e6e6e6"},
-        )
+            ui.v(
+                ui.h(
+                    ui.progress("progress", description="IT [000:000]"),
+                    ui.button("play", description="Start"),
+                    ui.button("stop", description="Stop"),
+                ),
+                ui.line("loss", title="Loss", layout={"height": "350px"}),
+                layout={"width": "100%", "border": "2px solid #ccc"},
+            ),
+            layout={"border": "2px solid #ccc"},
+        ),
+        ui.output("out"),
+        layout={"border": "4px solid #e6e6e6"},
+    )
 
-        self.view = view
-        with self:
-            clear_output()
-            display(self.view)
+    def step():
+        batch = next(batch_iterator)
+        loss = model.training_step(batch)
+        loss_history.append(loss)
+        time.sleep(0.01)
 
-        def train(self):
+    def train():
+        nonlocal it, batch_iterator
+        try:
             while True:
-                its = self.params.its.value
+                with lock:
+                    step()
+                    its = view.its.value
 
-                if not self.running or self.it >= its:
-                    if self.it >= its:
-                        self.it = 0
-                    self.stop()
-                    break
+                    if running_state != "running":
+                        break
 
-                self.progressIts.value = (self.it + 1) / its
-                time.sleep(0.01)
-                self.it += 1
+                    if it > its:
+                        stop()
+                        break
+
+                    view.progress.value = (it + 1) / (its + 1)
+                    view.progress.description = f"IT [{it:03}:{its:03}]"
+
+                    loss_history_np = np.array(loss_history)
+                    view.loss.plot(loss_history_np)
+                    it += 1
+        except StopIteration:
+            stop()
+
+    def play():
+        with lock:
+            nonlocal running_state
+            view.play.description = "Pause"
+            view.stop.disabled = False
+            running_state = "running"
+            thread = Thread(target=train)
+            thread.start()
+
+    def pause():
+        with lock:
+            nonlocal running_state
+            view.play.description = "Start"
+            running_state = "paused"
+
+    def stop():
+        with lock:
+            nonlocal it, batch_iterator, running_state, loss_history
+            pause()
+            it = 0
+            loss_history = []
+            batch_iterator = iter(dataloader)
+            view.stop.disabled = True
+            running_state = "stopped"
+
+    def toggle():
+        if running_state != "running":
+            play()
+        else:
+            pause()
+
+    view.play.on_click(lambda _: toggle())
+    view.stop.on_click(lambda _: stop())
+
+    return view
