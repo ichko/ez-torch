@@ -3,7 +3,6 @@ import os
 import torch
 import torch.nn as nn
 
-from ez_torch.ui import TrainableUI
 from ez_torch.utils import count_parameters
 
 
@@ -19,13 +18,13 @@ class Module(nn.Module):
         path = path if self.path is None else path
         torch.save(self, f"{self.path}.pk")
 
-    def configure_optimizers(self, lr):
-        return torch.optim.SGD(self.parameters(), lr=lr)
+    def configure_optimizers(self):
+        return torch.optim.SGD(self.parameters())
 
     def optimizers(self):
-        if hasattr(self, "__optimizers"):
-            return self.__optimizers
-        self.__optimizers = self.configure_optimizers()
+        if not hasattr(self, "__optimizers"):
+            self.__optimizers = self.configure_optimizers()
+        return self.__optimizers
 
     def set_requires_grad(self, value):
         for param in self.parameters():
