@@ -63,6 +63,10 @@ class ui:
         return ui.singleton(name=id, widget=w.FloatProgress(min=0, max=1, **kwargs))
 
     @staticmethod
+    def checkbox(id="unset", *args, **kwargs):
+        return ui.singleton(name=id, widget=w.Checkbox(*args, **kwargs))
+
+    @staticmethod
     def int(id="unset", *args, **kwargs):
         return ui.singleton(name=id, widget=w.BoundedIntText(*args, **kwargs))
 
@@ -158,7 +162,7 @@ class ui:
         )
 
 
-def train(model, dataloader, **params):
+def train(model, dataloader, in_background=True, **params):
     params = Namespace(**params)
     running_state = "stopped"
     it = 0
@@ -208,7 +212,6 @@ def train(model, dataloader, **params):
         batch = next(batch_iterator)
         loss = model.training_step(batch)
         loss_history.append(loss)
-        time.sleep(0.01)
 
     def train():
         nonlocal it, batch_iterator
@@ -240,8 +243,12 @@ def train(model, dataloader, **params):
             view.play.description = "Pause"
             view.stop.disabled = False
             running_state = "running"
-            thread = Thread(target=train)
-            thread.start()
+
+            if in_background:
+                thread = Thread(target=train)
+                thread.start()
+            else:
+                train()
 
     def pause():
         with lock:
