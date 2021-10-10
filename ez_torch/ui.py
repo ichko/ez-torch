@@ -49,38 +49,38 @@ class UIView:
         return Values()
 
 
-class ui:
+class make:
     @staticmethod
     def singleton(name, widget):
         return UIView(widget, {name: widget})
 
     @staticmethod
     def slider(id="unset", *args, **kwargs):
-        return ui.singleton(name=id, widget=w.FloatSlider(*args, **kwargs))
+        return make.singleton(name=id, widget=w.FloatSlider(*args, **kwargs))
 
     @staticmethod
     def progress(id="unset", *args, **kwargs):
-        return ui.singleton(name=id, widget=w.FloatProgress(min=0, max=1, **kwargs))
+        return make.singleton(name=id, widget=w.FloatProgress(min=0, max=1, **kwargs))
 
     @staticmethod
     def checkbox(id="unset", *args, **kwargs):
-        return ui.singleton(name=id, widget=w.Checkbox(*args, **kwargs))
+        return make.singleton(name=id, widget=w.Checkbox(*args, **kwargs))
 
     @staticmethod
     def int(id="unset", *args, **kwargs):
-        return ui.singleton(name=id, widget=w.BoundedIntText(*args, **kwargs))
+        return make.singleton(name=id, widget=w.BoundedIntText(*args, **kwargs))
 
     @staticmethod
     def float(id="unset", *args, **kwargs):
-        return ui.singleton(name=id, widget=w.FloatText(*args, **kwargs))
+        return make.singleton(name=id, widget=w.FloatText(*args, **kwargs))
 
     @staticmethod
     def text(id="unset", *args, **kwargs):
-        return ui.singleton(name=id, widget=w.Text(*args, **kwargs))
+        return make.singleton(name=id, widget=w.Text(*args, **kwargs))
 
     @staticmethod
     def button(id="unset", *args, **kwargs):
-        return ui.singleton(name=id, widget=w.Button(*args, **kwargs))
+        return make.singleton(name=id, widget=w.Button(*args, **kwargs))
 
     @staticmethod
     def output(id="unset"):
@@ -91,16 +91,19 @@ class ui:
                     for t in things:
                         display(t)
 
-            def __enter__(self):
-                enter_return = super().__enter__()
+            def clear(self):
                 clear_output(wait=True)
-                return enter_return
 
-        return ui.singleton(name=id, widget=Output())
+            # def __enter__(self):
+            #     enter_return = super().__enter__()
+            #     # clear_output(wait=True)
+            #     return enter_return
+
+        return make.singleton(name=id, widget=Output())
 
     @staticmethod
     def label(id="unset", *args, **kwargs):
-        return ui.singleton(name=id, widget=w.Label(*args, **kwargs))
+        return make.singleton(name=id, widget=w.Label(*args, **kwargs))
 
     @staticmethod
     def line(id="unset", *args, **kwargs):
@@ -137,7 +140,7 @@ class ui:
                 line.x = x
                 line.y = y
 
-        return ui.singleton(name=id, widget=LineWidget())
+        return make.singleton(name=id, widget=LineWidget())
 
     @staticmethod
     def h(*children, **kwargs):
@@ -162,7 +165,7 @@ class ui:
         )
 
 
-def train(model, dataloader, in_background=True, **params):
+def for_training(model, dataloader, in_background=True, **params):
     params = Namespace(**params)
     running_state = "stopped"
     it = 0
@@ -170,11 +173,11 @@ def train(model, dataloader, in_background=True, **params):
     loss_history = []
     lock = nullcontext()
 
-    view = ui.v(
-        ui.h(
-            ui.v(
-                ui.label(value="LR"),
-                ui.slider(
+    view = make.v(
+        make.h(
+            make.v(
+                make.label(value="LR"),
+                make.slider(
                     "lr",
                     min=0.0001,
                     max=1,
@@ -183,8 +186,8 @@ def train(model, dataloader, in_background=True, **params):
                     readout_format=".4f",
                     layout={"width": "auto"},
                 ),
-                ui.label(value="ITS"),
-                ui.int(
+                make.label(value="ITS"),
+                make.int(
                     "its",
                     min=1,
                     max=999999999,
@@ -193,18 +196,18 @@ def train(model, dataloader, in_background=True, **params):
                 ),
                 layout=w.Layout(**{"width": "25%", "border": "2px solid #ccc"}),
             ),
-            ui.v(
-                ui.h(
-                    ui.progress("progress", description="IT [000:000]"),
-                    ui.button("play", description="Start"),
-                    ui.button("stop", description="Stop"),
+            make.v(
+                make.h(
+                    make.progress("progress", description="IT [000:000]"),
+                    make.button("play", description="Start"),
+                    make.button("stop", description="Stop"),
                 ),
-                ui.line("loss", title="Loss", layout={"height": "350px"}),
+                make.line("loss", title="Loss", layout={"height": "350px"}),
                 layout={"width": "100%", "border": "2px solid #ccc"},
             ),
             layout={"border": "2px solid #ccc"},
         ),
-        ui.output("out"),
+        make.output("out"),
         layout={"border": "4px solid #e6e6e6"},
     )
 
@@ -274,5 +277,70 @@ def train(model, dataloader, in_background=True, **params):
 
     view.play.on_click(lambda _: toggle())
     view.stop.on_click(lambda _: stop())
+
+    return view
+
+
+def for_generator(generator):
+    # TODO: This kind of does not work because ot the multi threadedness. Look at the notebook
+    # from the commit this comes from. It is not good. Think of a way to sync with the front-end
+    # or discard this function.
+    view = make.v(
+        make.h(
+            make.progress("progress"),
+            make.button("toggle", description="Start"),
+            make.button("restart", description="Restart"),
+        ),
+        make.output("out"),
+    )
+
+    it = generator(view.out)
+    running = False
+    lock = nullcontext()
+
+    def restart():
+        with lock:
+            nonlocal it, running
+            running = False
+            it = generator(view.out)
+            with view.out:
+                view.out.clear()
+
+    def run():
+        nonlocal it
+        while running:
+            # time.sleep(0.05)
+            try:
+                with lock:
+                    value = next(it)
+                    try:
+                        view.progress.value = value
+                    except Exception:
+                        pass
+            except StopIteration:
+                restart()
+
+    def play():
+        with lock:
+            nonlocal running
+            view.toggle.description = "Pause"
+            running = True
+            thread = Thread(target=run)
+            thread.start()
+
+    def pause():
+        with lock:
+            nonlocal running
+            view.toggle.description = "Start"
+            running = False
+
+    def toggle():
+        if running:
+            pause()
+        else:
+            play()
+
+    view.toggle.on_click(lambda _: toggle())
+    view.restart.on_click(lambda _: restart())
 
     return view
