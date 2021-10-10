@@ -87,7 +87,7 @@ class make:
         class Output(w.Output):
             def display(self, *things):
                 with self:
-                    clear_output(wait=True)
+                    # clear_output(wait=True)
                     for t in things:
                         display(t)
 
