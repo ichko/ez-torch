@@ -21,73 +21,85 @@ def extend(type, is_property=False):
     return decorator
 
 
-class TensorWrapper:
+class EasyTensor:
     def __init__(self, tensor):
-        self.tensor = tensor
+        self.raw = tensor
 
     def __getattr__(self, key):
-        if hasattr(self.tensor, key):
-            attr = getattr(self.tensor, key)
+        if hasattr(self.raw, key):
+            attr = getattr(self.raw, key)
             if callable(attr):
 
                 @wraps(attr)
                 def caller(*args, **kwargs):
-                    self.tensor = attr(*args, **kwargs)
+                    self.raw = attr(*args, **kwargs)
                     return self
 
                 return caller
 
-            return getattr(self.tensor, key)
+            return getattr(self.raw, key)
 
-        raise ValueError(f"TensorWrapper does not have property {key}")
+        raise ValueError(f"EasyTensor does not have property {key}")
 
-    @property
-    def raw(self):
-        return self.tensor
+    def __getitem__(self, *args):
+        return EasyTensor(self.raw.__getitem__(*args))
 
     @property
     def np(self):
-        return self.tensor.detach().cpu().numpy()
+        return self.raw.detach().cpu().numpy()
 
     def resize(self, *size):
-        self.tensor = F.interpolate(
-            self.tensor, size, mode="bicubic", align_corners=True
+        return EasyTensor(
+            F.interpolate(self.raw, size, mode="bicubic", align_corners=True)
         )
-        return self
 
     def grid(self, nr=None, padding=3):
         if nr == None:
-            nr = self.tensor.size(0)
-        self.tensor = torchvision.utils.make_grid(
-            self.tensor, nrow=nr, padding=padding, normalize=True
+            nr = self.raw.size(0)
+        return EasyTensor(
+            torchvision.utils.make_grid(
+                self.raw, nrow=nr, padding=padding, normalize=True
+            )
         )
-        return self
 
     def spread_bs(self, *split_shape):
-        shape = self.tensor.shape
+        shape = self.raw.shape
         _bs, rest_dims = shape[0], shape[1:]
-        self.tensor = self.tensor.reshape(*split_shape, *rest_dims)
-        return self
+        return EasyTensor(self.raw.reshape(*split_shape, *rest_dims))
 
     @property
-    def channel_last(self):
-        self.tensor = self.tensor.permute(1, 2, 0)
-        return self
+    def hwc(self):
+        return EasyTensor(self.raw.permute(0, 2, 3, 1))
 
-    def imshow(self, figsize=(16, 16)):
+    def imshow(self, figsize=None):
         import matplotlib.pyplot as plt
 
-        tensor = self.raw
-        tensor = tensor.permute(1, 2, 0)
-        tensor = TensorWrapper(tensor).np
+        tensor = self.hwc.np
         fig = plt.figure(figsize=figsize)
-
         ax = fig.subplots(1, 1)
         ax.imshow(tensor)
+        plt.close()
 
-        return self
+        return fig
+
+    def seq_in_batch(self):
+        # This function assumes that dim=1 is the seq dim
+        bs, seq_size = self.raw.shape[:2]
+        return EasyTensor(self.raw.view(bs * seq_size, *self.raw.shape[2:]))
+
+    def batch_in_seq(self, bs=None, seq_size=None):
+        bs_new, rest_shape = self.raw.shape[0], self.raw.shape[1:]
+        if bs is None and seq_size is None:
+            raise Exception("At least one of bs, seq_size, should be given")
+
+        if bs is None:
+            bs = bs_new // seq_size
+        else:
+            seq_size = bs_new // bs
+
+        return EasyTensor(self._easy_tensor.raw.view(bs, seq_size, *rest_shape))
 
 
 @extend(torch.Tensor, is_property=True)
 def ez(tensor: torch.Tensor):
-    return TensorWrapper(tensor=tensor)
+    return EasyTensor(tensor=tensor)

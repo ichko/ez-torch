@@ -10,11 +10,11 @@ import seaborn as sns
 from matplotlib.pyplot import draw, pause
 from torch import Tensor
 
-from ez_torch.tensor_wrapper import TensorWrapper
+from ez_torch.tensor_wrapper import EasyTensor
 
 
 def unwrap(tensor):
-    if isinstance(tensor, TensorWrapper):
+    if isinstance(tensor, EasyTensor):
         return tensor.raw
 
     return tensor
